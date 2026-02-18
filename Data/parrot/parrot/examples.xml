@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<demos>
+  <demoitem>
+    <source>GettingStartedPARROTMinidronesExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/GettingStartedPARROTMinidronesExample.html</file>
+    <metadata>ex03104010</metadata>
+    <sandboxPublished/>
+    <hideCode/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1519189038">parrot_addon.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_inport.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_outport.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_subsystem.png</file>
+    <file component="parrot" timestamp="1519189038">build_model_button.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_flightControlInterfaceClickLink.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_flightControlInterface.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_flightControlInterface_setTime.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_flightControlInterface_stop.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_flightControlInterface_startAgain.png</file>
+    <file component="parrot" timestamp="1519189038">parrot_codegen.png</file>
+    <file component="parrot" timestamp="1547556954">variable_input.png</file>
+    <file component="parrot" timestamp="1580219553">parrot_flightcontrol_new.png</file>
+    <file component="parrot" timestamp="1577092084">parrot_codegen_new.png</file>
+    <file component="parrot" open="open" timestamp="1682053773">parrot_gettingstarted.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>GettingStartedCannonParrotMinidroneExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/GettingStartedCannonParrotMinidroneExample.html</file>
+    <metadata>ex05905540</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1565951259">parrot_cannon_example1.png</file>
+    <file component="parrot" open="open" timestamp="1682056336">parrot_cannon_getting_started.slx</file>
+    <file component="parrot" timestamp="1682056336">parrot_cannon_keyboard_control.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>GettingStartedKeyboardControlofParrotExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/GettingStartedKeyboardControlofParrotExample.html</file>
+    <metadata>ex12676496</metadata>
+    <thumbnail>data/parrot_keyboardcontrol_logic.png</thumbnail>
+    <sandboxPublished/>
+    <hideCode/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1549861014">parrot_keyboard_control_panel1.png</file>
+    <file component="parrot" timestamp="1549861014">parrot_keyboard_control_panel2.png</file>
+    <file component="parrot" timestamp="1549861800">parrot_keyboardcontrol_logic.png</file>
+    <file component="parrot" open="open" timestamp="1682055992">parrot_keyboard_control.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>MinidroneVirtualLabExample</source>
+    <type>live</type>
+    <extension>mlx</extension>
+    <metadata>ex16217834</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+  </demoitem>
+  <demoitem>
+    <source>GettingStartedGrabberBlockParrotMinidroneExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/GettingStartedGrabberBlockParrotMinidroneExample.html</file>
+    <metadata>ex31526658</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1565953199">parrot_grabber_example1.png</file>
+    <file component="parrot" open="open" timestamp="1682056724">parrot_grabber_getting_started.slx</file>
+    <file component="parrot" timestamp="1682056724">parrot_grabber_keyboard_control.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>FollowWaypointsParrotMinidroneFlightExample</source>
+    <project cmSystem="" component="parrot" open="open" type="main">parrotMinidroneWaypointFollower</project>
+    <type>project</type>
+    <extension>m</extension>
+    <file>html/FollowWaypointsParrotMinidroneFlightExample.html</file>
+    <metadata>ex32320805</metadata>
+    <thumbnail>data/parrot_waypoint_path_planning.png</thumbnail>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <product>simulink</product>
+    <file component="parrot" timestamp="1580184712">parrot_waypoint_setmambo.png</file>
+    <file component="parrot" timestamp="1580184712">parrot_waypoint_path_planning.png</file>
+    <file component="parrot" timestamp="1565935850">parrot_waypoint_transition.png</file>
+    <file component="parrot" timestamp="1580117002">parrot_orbitfollower_susbsytems.png</file>
+    <file component="parrot" timestamp="1581689965">parrot_orbitfollower_new.png</file>
+    <file component="parrot" timestamp="1581689965">parrot_waypointfollower_new.png</file>
+    <file component="parrot" timestamp="1642788647">parrot_waypointfollower_new_uav.png</file>
+    <file component="parrot" timestamp="1642788647">parrot_orbitfollower_new_uav.png</file>
+    <workFolder>Waypoint</workFolder>
+  </demoitem>
+  <demoitem>
+    <source>Module1GetToKnowTheBasicsExample</source>
+    <type>live</type>
+    <extension>mlx</extension>
+    <metadata>ex34640988</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+  </demoitem>
+  <demoitem>
+    <source>GettingStartedWithVisionOnPARROTExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/GettingStartedWithVisionOnPARROTExample.html</file>
+    <metadata>ex41669297</metadata>
+    <sandboxPublished/>
+    <hideCode/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" open="open" timestamp="1680176392">parrot_vision.slx</file>
+    <file component="parrot" timestamp="1680176392">parrot_vision_ext_mode.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>FollowOrbitParrotMinidroneExample</source>
+    <project cmSystem="" component="parrot" open="open" type="main">ParrotMinidroneOrbitFollower</project>
+    <type>project</type>
+    <extension>m</extension>
+    <file>html/FollowOrbitParrotMinidroneExample.html</file>
+    <metadata>ex54483226</metadata>
+    <thumbnail>data/parrot_orbitfollower_susbsytems.png</thumbnail>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1703656062">parrot_orbitfollower_new_uav.png</file>
+    <file component="parrot" timestamp="1703656062">parrot_orbitfollower_susbsytems.png</file>
+    <file component="parrot" timestamp="1703656062">parrot_waypoint_setmambo.png</file>
+    <workFolder>Orbit</workFolder>
+  </demoitem>
+  <demoitem>
+    <source>CommunicatingWithPARROTMinidroneTCPUDPExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/CommunicatingWithPARROTMinidroneTCPUDPExample.html</file>
+    <metadata>ex57586506</metadata>
+    <sandboxPublished/>
+    <hideCode/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1519189038">parrot_flightControlInterface.png</file>
+    <file component="parrot" open="open" timestamp="1682055394">parrot_communication.slx</file>
+    <file component="parrot" timestamp="1682055394">parrot_communication_host.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>ColorDetectionLandingOfParrotMinidroneExample</source>
+    <type>M-file</type>
+    <extension>m</extension>
+    <metadata>ex73394325</metadata>
+    <thumbnail>data/simulation_track.png</thumbnail>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1548942278">parrot_colordetection1.png</file>
+    <file component="parrot" timestamp="1548942278">parrot_colordetection2.png</file>
+    <file component="parrot" timestamp="1548942278">parrot_colordetection3.png</file>
+    <file component="parrot" timestamp="1548942278">parrot_colordetection4.png</file>
+    <file component="parrot" timestamp="1611243571">line_follower.png</file>
+    <file component="parrot" timestamp="1611243571">simulation_track.png</file>
+    <file component="parrot" timestamp="1611761658">parrot_track_builder.gif</file>
+    <noButton/>
+  </demoitem>
+  <demoitem>
+    <source>ControllingMotorSpeedOfAPARROTMinidroneExternalModeExample</source>
+    <type>model</type>
+    <extension>m</extension>
+    <file>html/ControllingMotorSpeedOfAPARROTMinidroneExternalModeExample.html</file>
+    <metadata>ex77554630</metadata>
+    <sandboxPublished/>
+    <hideCode/>
+    <product>matlab</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1519189948">ext_mode_simulation.png</file>
+    <file component="parrot" timestamp="1519189948">ext_mode_start.png</file>
+    <file component="parrot" timestamp="1519189948">parrot_stop_time.png</file>
+    <file component="parrot" timestamp="1519189948">ext_mode_stop.png</file>
+    <file component="parrot" timestamp="1577094126">ext_mode_simulation_new.png</file>
+    <file component="parrot" timestamp="1577094126">ext_mode_stop_new.png</file>
+    <file component="parrot" open="open" timestamp="1682054541">parrot_external_mode.slx</file>
+  </demoitem>
+  <demoitem>
+    <source>PathPlanningUsingParrotMinidroneExample</source>
+    <project cmSystem="" component="parrot" open="open" type="main">ParrotMinidroneKeyboardControl</project>
+    <type>project</type>
+    <extension>m</extension>
+    <file>html/PathPlanningUsingParrotMinidroneExample.html</file>
+    <metadata>ex87699957</metadata>
+    <thumbnail>data/parrot_keyboard_control.png</thumbnail>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>simulink</product>
+    <product>parrot</product>
+    <file component="parrot" timestamp="1579846788">parrot_fcs.png</file>
+    <file component="parrot" timestamp="1579846788">parrot_keyboard_control.png</file>
+    <file component="parrot" timestamp="1579846788">parrot_pathplanning.png</file>
+    <file component="parrot" timestamp="1579846788">parrot_qfsm_mambo.png</file>
+    <file component="parrot" timestamp="1579846788">parrot_waypoint_setmambo_20a.png</file>
+    <file component="parrot" timestamp="1579857847">parrot_keyboard_logic.png</file>
+    <workFolder>PathPlan</workFolder>
+  </demoitem>
+  <demoitem>
+    <source>Module2ControlTheMinidroneExample</source>
+    <type>live</type>
+    <extension>mlx</extension>
+    <metadata>ex94743587</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+  </demoitem>
+  <demoitem>
+    <source>Module3ManeuverTheMinidroneExample</source>
+    <type>live</type>
+    <extension>mlx</extension>
+    <metadata>ex95916008</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+  </demoitem>
+  <demoitem>
+    <source>Module4MinidronePerceptionExample</source>
+    <type>live</type>
+    <extension>mlx</extension>
+    <metadata>ex97183809</metadata>
+    <sandboxPublished/>
+    <product>matlab</product>
+    <product>parrot</product>
+  </demoitem>
+</demos>
