@@ -93,6 +93,10 @@ ylim([-maxReach*0.2, maxReach*1.2]);
 plot(trajectory(:,1), trajectory(:,2), 'b--', 'LineWidth', 1);
 
 fprintf('Animating robot motion...\n');
+h_link1 = [];
+h_link2 = [];
+h_joints = [];
+
 for i = 1:5:numPoints
     if ~isnan(theta1_trajectory(i))
         % Calculate positions
@@ -102,22 +106,19 @@ for i = 1:5:numPoints
         x2 = x1 + L2 * cos(theta1_trajectory(i) + theta2_trajectory(i));
         y2 = y1 + L2 * sin(theta1_trajectory(i) + theta2_trajectory(i));
         
-        % Clear previous robot
-        cla;
-        plot(trajectory(:,1), trajectory(:,2), 'b--', 'LineWidth', 1);
+        % Clear previous robot graphics
+        delete(h_link1);
+        delete(h_link2);
+        delete(h_joints);
         
         % Plot robot
-        plot([x0 x1], [y0 y1], 'b-', 'LineWidth', 3);
-        plot([x1 x2], [y1 y2], 'r-', 'LineWidth', 3);
-        plot(x0, y0, 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k');
-        plot(x1, y1, 'go', 'MarkerSize', 8, 'MarkerFaceColor', 'g');
-        plot(x2, y2, 'ro', 'MarkerSize', 8, 'MarkerFaceColor', 'r');
+        h_link1 = plot([x0 x1], [y0 y1], 'b-', 'LineWidth', 3);
+        h_link2 = plot([x1 x2], [y1 y2], 'r-', 'LineWidth', 3);
+        h_joints = [plot(x0, y0, 'ko', 'MarkerSize', 8, 'MarkerFaceColor', 'k'), ...
+                   plot(x1, y1, 'go', 'MarkerSize', 8, 'MarkerFaceColor', 'g'), ...
+                   plot(x2, y2, 'ro', 'MarkerSize', 8, 'MarkerFaceColor', 'r')];
         
-        axis equal;
-        xlim([-maxReach*0.2, maxReach*1.2]);
-        ylim([-maxReach*0.2, maxReach*1.2]);
-        
-        drawnow;
+        drawnow limitrate;
         pause(0.05);
     end
 end

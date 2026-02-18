@@ -33,53 +33,43 @@ fprintf('\n');
 switch choice
     case 1
         fprintf('Running Forward Kinematics Example...\n');
-        cd examples;
-        example1_forward_kinematics;
-        cd ..;
+        run('examples/example1_forward_kinematics');
         
     case 2
         fprintf('Running Inverse Kinematics Example...\n');
-        cd examples;
-        example2_inverse_kinematics;
-        cd ..;
+        run('examples/example2_inverse_kinematics');
         
     case 3
         fprintf('Running Trajectory Following Example...\n');
-        cd examples;
-        example3_trajectory;
-        cd ..;
+        run('examples/example3_trajectory');
         
     case 4
         fprintf('Running Jacobian Matrix Example...\n');
-        cd examples;
-        example4_jacobian;
-        cd ..;
+        run('examples/example4_jacobian');
         
     case 5
         fprintf('Running All Examples...\n\n');
         
         fprintf('1/4: Forward Kinematics...\n');
-        cd examples;
-        example1_forward_kinematics;
+        run('examples/example1_forward_kinematics');
         fprintf('\nPress any key to continue...\n');
         pause;
         close all;
         
         fprintf('\n2/4: Inverse Kinematics...\n');
-        example2_inverse_kinematics;
+        run('examples/example2_inverse_kinematics');
         fprintf('\nPress any key to continue...\n');
         pause;
         close all;
         
         fprintf('\n3/4: Trajectory Following...\n');
-        example3_trajectory;
+        run('examples/example3_trajectory');
         fprintf('\nPress any key to continue...\n');
         pause;
         close all;
         
         fprintf('\n4/4: Jacobian Matrix...\n');
-        example4_jacobian;
-        cd ..;
+        run('examples/example4_jacobian');
         
         fprintf('\n===========================================\n');
         fprintf('All examples completed!\n');

@@ -20,11 +20,7 @@ function trajectory = generateTrajectory(startPos, endPos, numPoints)
         numPoints = 50;
     end
     
-    % Generate linear interpolation
-    t = linspace(0, 1, numPoints);
-    trajectory = zeros(numPoints, 2);
-    
-    for i = 1:numPoints
-        trajectory(i, :) = startPos + t(i) * (endPos - startPos);
-    end
+    % Generate linear interpolation using vectorized operations
+    t = linspace(0, 1, numPoints)';
+    trajectory = startPos + t .* (endPos - startPos);
 end
