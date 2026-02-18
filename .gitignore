@@ -1,0 +1,21 @@
+# MATLAB specific files
+*.asv
+*.m~
+*.mex*
+*.slx.autosave
+
+# Generated files
+*.mat
+slprj/
+
+# Simulink files
+*.slxc
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+*.sublime-*
