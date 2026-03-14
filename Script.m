@@ -8,7 +8,6 @@ t = tiledlayout(3, 2, 'TileSpacing', 'Compact', 'Padding', 'Compact');
 for i = 1:3
     % Load the specific file
     data_struct = load(files{i});
-    penis
     % Access the nested signals (adjusting for the structure found in your file)
     % Using rx_data.signals.values and squeezing 6x1x2001 to 6x2001
     all_data = squeeze(data_struct.rx_data.signals.values)'; 
