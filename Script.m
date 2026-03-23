@@ -19,7 +19,7 @@ desiredAxisSign = [-1, 1, -1];
 % Static desired-phase timing (manual, easy to edit)
 % Tuned to the provided plot timing.
 desiredPhaseStartSec = [0, 10, 20, 30, 40];
-desiredPhaseEndSec = [3, 15, 25, 35, 45];
+desiredPhaseEndSec = [5, 15, 25, 35, 45];
 
 % Per-axis desired timing shift [X Y Z] in seconds
 % Use this when one axis starts with an extra delay.
@@ -37,28 +37,30 @@ nCalibOffset = 100;
 axis_colors = [0.00 0.45 0.74; 0.85 0.33 0.10; 0.47 0.67 0.19];
 raw_alpha = 0.30;  lw_raw = 0.9;
 
-% Create figure for IMU Analysis with all 3 axes side-by-side (3 rows x 6 cols)
-figure('Name', 'IMU Analysis', 'NumberTitle', 'off', 'Position', [100, 100, 2000, 1200]);
-t = tiledlayout(3, 6, 'TileSpacing', 'Compact', 'Padding', 'Compact');
-title(t, 'Task 5.1-5.6: IMU Analysis (All Axes)')
+% Create tabbed figures: one tab per motion dataset (X/Y/Z)
+figIMU = figure('Name', 'IMU Analysis', 'NumberTitle', 'off', 'Position', [100, 100, 2000, 1200]);
+tgIMU = uitabgroup(figIMU);
 
-% Create figure for Method Comparison with all 3 axes (3 rows x 1 col)
-figure('Name', 'Method Comparison', 'NumberTitle', 'off', 'Position', [120, 120, 1200, 900]);
-t_cmp = tiledlayout(3, 1, 'TileSpacing', 'Compact', 'Padding', 'Compact');
-title(t_cmp, 'Method Comparison (All Axes)')
+figCmp = figure('Name', 'Method Comparison', 'NumberTitle', 'off', 'Position', [120, 120, 1200, 900]);
+tgCmp = uitabgroup(figCmp);
 
-% Compare complementary filter with and without offset compensation
 if compareOffsetComp
-    figure('Name', 'Offset Compensation Comparison', 'NumberTitle', 'off', 'Position', [140, 140, 1200, 900]);
-    t_off = tiledlayout(3, 1, 'TileSpacing', 'Compact', 'Padding', 'Compact');
-    title(t_off, 'Complementary Filter: With vs Without Offset Compensation')
+    figOff = figure('Name', 'Offset Compensation Comparison', 'NumberTitle', 'off', 'Position', [140, 140, 1200, 900]);
+    tgOff = uitabgroup(figOff);
 end
 
-all_axes = gobjects(0);
-cmp_axes = gobjects(0);
-off_axes = gobjects(0);
-
 for i = 1:3
+    tabIMU = uitab(tgIMU, 'Title', labels{i});
+    t = tiledlayout(tabIMU, 2, 3, 'TileSpacing', 'Compact', 'Padding', 'Compact');
+    title(t, ['Task 5.1-5.6: ' labels{i}]);
+
+    tabCmp = uitab(tgCmp, 'Title', labels{i});
+    ax_cmp = axes('Parent', tabCmp);
+
+    if compareOffsetComp
+        tabOff = uitab(tgOff, 'Title', labels{i});
+        ax_off = axes('Parent', tabOff);
+    end
     
     % Load data
     data_struct = load(files{i});
@@ -140,12 +142,10 @@ for i = 1:3
         staticResult.stdErrorDeg = NaN;
     end
 
-    staticResult.rmseDeg = computeRMSError(calc_rotation_fused, axisCol(i), desiredAxis);
-    fprintf('RMS Error (%s): %.4f deg\n', labels{i}, staticResult.rmseDeg);
     plotStaticComparison(plot_t, labels{i}, staticResult);
 
     % Plot raw accelerometer
-    ax1 = nexttile(t);
+    ax1 = nexttile(t, 1);
     hold(ax1, 'on')
     for k = 1:3
         plot(ax1, plot_t, accel_raw(:, k), 'LineWidth', lw_raw, 'Color', [axis_colors(k, :) raw_alpha]);
@@ -160,7 +160,7 @@ for i = 1:3
     end
 
     % Plot raw gyroscope
-    ax2 = nexttile(t);
+    ax2 = nexttile(t, 4);
     hold(ax2, 'on')
     for k = 1:3
         plot(ax2, plot_t, gyro_raw(:, k), 'LineWidth', lw_raw, 'Color', [axis_colors(k, :) raw_alpha]);
@@ -175,7 +175,7 @@ for i = 1:3
     end
 
     % Accelerometer angles
-    ax3 = nexttile(t);
+    ax3 = nexttile(t, 2);
     plot(ax3, plot_t, calc_rotation_accel, 'LineWidth', 1.5)
     title(ax3, [labels{i} ' - Orientation from Accelerometer'])
     ylabel(ax3, 'Degrees')
@@ -185,7 +185,7 @@ for i = 1:3
     if i == 1, legend(ax3, 'Roll', 'Pitch', 'Location', 'eastoutside'); end
 
     % Gyroscope angles
-    ax4 = nexttile(t);
+    ax4 = nexttile(t, 5);
     plot(ax4, plot_t, calc_rotation_gyro, 'LineWidth', 1.2)
     title(ax4, [labels{i} ' - Orientation from Gyroscope'])
     ylabel(ax4, 'Degrees')
@@ -195,7 +195,7 @@ for i = 1:3
     if i == 1, legend(ax4, 'Roll_g', 'Pitch_g', 'Yaw_g', 'Location', 'eastoutside'); end
 
     % Quaternion angles
-    ax5 = nexttile(t);
+    ax5 = nexttile(t, 6);
     plot(ax5, plot_t, calc_rotation_gyro_quat, 'LineWidth', 1.2)
     title(ax5, [labels{i} ' - Orientation from Gyro Quaternion'])
     ylabel(ax5, 'Degrees')
@@ -205,7 +205,7 @@ for i = 1:3
     if i == 1, legend(ax5, 'Roll_q', 'Pitch_q', 'Yaw_q', 'Location', 'eastoutside'); end
 
     % Complementary filter
-    ax6 = nexttile(t);
+    ax6 = nexttile(t, 3);
     plot(ax6, plot_t, calc_rotation_fused, 'LineWidth', 1.2)
     title(ax6, [labels{i} ' - Orientation from Complementary Filter'])
     ylabel(ax6, 'Degrees')
@@ -215,7 +215,6 @@ for i = 1:3
     if i == 1, legend(ax6, 'Roll_c', 'Pitch_c', 'Yaw_c', 'Location', 'eastoutside'); end
 
     % Method comparison
-    ax_cmp = nexttile(t_cmp);
     hold(ax_cmp, 'on')
     if i == 1
         accel_trace = calc_rotation_accel(:, 1);
@@ -246,14 +245,13 @@ for i = 1:3
     box(ax_cmp, 'on')
     yline(ax_cmp, 0, ':', 'Color', [0.50 0.50 0.50]);
     if i < 3
-        legend(ax_cmp, {'Accel only', 'Complementary Filter', 'Gyro only'}, 'Location', 'eastoutside');
+        legend(ax_cmp, {'Accel only', 'Complementary Filter', 'Gyro only'}, 'Location', 'best');
     else
-        legend(ax_cmp, {'Accel yaw (accel-only)', 'Complementary Filter', 'Gyro only'}, 'Location', 'eastoutside');
+        legend(ax_cmp, {'Accel yaw (accel-only)', 'Complementary Filter', 'Gyro only'}, 'Location', 'best');
     end
 
     % Offset compensation comparison (complementary filter only)
     if compareOffsetComp
-        ax_off = nexttile(t_off);
         hold(ax_off, 'on')
         fused_no_offset = fusedAnglesBranch{1}(:, axisCol(i));
         fused_with_offset = fusedAnglesBranch{2}(:, axisCol(i));
@@ -271,31 +269,19 @@ for i = 1:3
         grid(ax_off, 'on')
         box(ax_off, 'on')
         yline(ax_off, 0, ':', 'Color', [0.50 0.50 0.50]);
-        legend(ax_off, {'Without offset compensation', 'With offset compensation'}, 'Location', 'eastoutside');
+        legend(ax_off, {'Without offset compensation', 'With offset compensation'}, 'Location', 'best');
     end
 
-    cmp_axes = [cmp_axes, ax_cmp];
-    if compareOffsetComp
-        off_axes = [off_axes, ax_off];
-    end
-    all_axes = [all_axes, ax1, ax2, ax3, ax4, ax5, ax6];
-    
-    % Link axes within this tab
     xlabel(t, 'Time (seconds)')
-    linkaxes(all_axes, 'x')
-    xlim(all_axes, [plot_t(1) plot_t(end)])
-    all_axes = gobjects(0);
-    
-    xlabel(t_cmp, 'Time (seconds)')
-    linkaxes(cmp_axes, 'x')
-    xlim(cmp_axes, [plot_t(1) plot_t(end)])
-    cmp_axes = gobjects(0);
+    linkaxes([ax1, ax2, ax3, ax4, ax5, ax6], 'x')
+    xlim([ax1, ax2, ax3, ax4, ax5, ax6], [plot_t(1) plot_t(end)])
+
+    xlabel(ax_cmp, 'Time (seconds)')
+    xlim(ax_cmp, [plot_t(1) plot_t(end)])
 
     if compareOffsetComp
-        xlabel(t_off, 'Time (seconds)')
-        linkaxes(off_axes, 'x')
-        xlim(off_axes, [plot_t(1) plot_t(end)])
-        off_axes = gobjects(0);
+        xlabel(ax_off, 'Time (seconds)')
+        xlim(ax_off, [plot_t(1) plot_t(end)])
     end
 end
 
@@ -388,38 +374,10 @@ function plotStaticComparison(plot_t, axisLabel, staticResult)
     title(['Static comparison - ' axisLabel]);
     legend('Calculated angle (normal)', 'Desired angle in static phases', 'Location', 'best');
 
-    statsText = sprintf('Mean error: %.2f deg\nStd dev: %.2f deg\nRMSE: %.2f deg', ...
-        staticResult.meanErrorDeg, staticResult.stdErrorDeg, staticResult.rmseDeg);
+    statsText = sprintf('Mean error: %.2f deg\nStd dev: %.2f deg', ...
+        staticResult.meanErrorDeg, staticResult.stdErrorDeg);
     annotation('textbox', [0.67 0.72 0.30 0.20], 'String', statsText, ...
         'FitBoxToText', 'on', 'BackgroundColor', 'white', 'EdgeColor', [0.7 0.7 0.7]);
-end
-
-
-function rms_error = computeRMSError(data, column, expected_values)
-    sections = [50 100; 500 550; 900 950; 1300 1350; 1700 1750];
-
-    squared_error_sum = 0;
-    total_count = 0;
-
-    for i = 1:size(sections, 1)
-        rangeStart = sections(i, 1);
-        rangeEnd = min(sections(i, 2), size(data, 1));
-        if rangeStart > size(data, 1) || i > numel(expected_values)
-            continue;
-        end
-
-        range = rangeStart:rangeEnd;
-        actual_values = data(range, column);
-
-        squared_error_sum = squared_error_sum + sum((actual_values - expected_values(i)).^2);
-        total_count = total_count + numel(actual_values);
-    end
-
-    if total_count == 0
-        rms_error = NaN;
-    else
-        rms_error = sqrt(squared_error_sum / total_count);
-    end
 end
 
 
