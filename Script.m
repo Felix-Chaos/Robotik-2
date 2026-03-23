@@ -3,7 +3,8 @@
 
 clearvars; clc; close all;
 
-useOffsetComp = false;
+useOffsetComp = true;
+compareOffsetComp = true;
 fprintf('Offset compensation: %s\n', char(string(useOffsetComp)));
 
 files = {'x_axis_rotation_3.mat', 'y_axis_rotation_3.mat', 'z_axis_rotation_3.mat'};
@@ -11,46 +12,54 @@ labels = {'X-Axis Movement', 'Y-Axis Movement', 'Z-Axis Movement'};
 axisCol = [1, 2, 3];
 desired = [0, 45, 90, 45, 0]';
 
+% Desired angle sign per axis [X Y Z]
+% X and Z inverted, Y unchanged.
+desiredAxisSign = [-1, 1, -1];
+
+% Static desired-phase timing (manual, easy to edit)
+% Tuned to the provided plot timing.
+desiredPhaseStartSec = [0, 10, 20, 30, 40];
+desiredPhaseEndSec = [3, 15, 25, 35, 45];
+
+% Per-axis desired timing shift [X Y Z] in seconds
+% Use this when one axis starts with an extra delay.
+desiredAxisStartDelaySec = [0.0, 0.0, 0.0];
+
 % Sensor parameters
 fs = 50;  Ts = 1/fs;  gamma = 0.97;
-maxDurationSec = 60;  gyroThreshDeg = 3;  minStaticSec = 1.0;
+maxDurationSec = 60;  gyroThreshDeg = 3;  minStaticSec = 3.0;
 
-% Offset calibration from no_motion.mat
-
-[nmAccOffset, nmGyroOffset, hasNoMotionOffsets] = computeNoMotionOffsets('no_motion.mat');
-
-% Compute static phase threshold from no_motion gyro noise profile
-if hasNoMotionOffsets
-    S_nm = load('no_motion.mat');
-    if isfield(S_nm, 'rx_data')
-        vals_nm = squeeze(S_nm.rx_data.signals.values)';
-        if size(vals_nm, 2) >= 6
-            gyro_nm = vals_nm(:, 4:6) - nmGyroOffset;
-            gyro_nm_norm_deg = vecnorm(gyro_nm * 180 / pi, 2, 2);
-            gyroThreshDeg = max(gyroThreshDeg, mean(gyro_nm_norm_deg) + 3 * std(gyro_nm_norm_deg));
-        end
-    elseif isfield(S_nm, 'gyro')
-        gyro_nm = S_nm.gyro - nmGyroOffset;
-        gyro_nm_norm_deg = vecnorm(gyro_nm * 180 / pi, 2, 2);
-        gyroThreshDeg = max(gyroThreshDeg, mean(gyro_nm_norm_deg) + 3 * std(gyro_nm_norm_deg));
-    end
-end
+% Offset calibration follows the same approach as the axis scripts:
+% mean over first 100 samples and subtract that bias.
+nCalibOffset = 100;
 
 % Plot configuration
 axis_colors = [0.00 0.45 0.74; 0.85 0.33 0.10; 0.47 0.67 0.19];
 raw_alpha = 0.30;  lw_raw = 0.9;
 
-figure('Name', 'IMU Analysis', 'NumberTitle', 'off', 'Position', [100, 100, 2000, 800]);
+% Create figure for IMU Analysis with all 3 axes side-by-side (3 rows x 6 cols)
+figure('Name', 'IMU Analysis', 'NumberTitle', 'off', 'Position', [100, 100, 2000, 1200]);
 t = tiledlayout(3, 6, 'TileSpacing', 'Compact', 'Padding', 'Compact');
-title(t, 'Task 5.1-5.6: IMU Analysis')
-all_axes = gobjects(0);
+title(t, 'Task 5.1-5.6: IMU Analysis (All Axes)')
 
+% Create figure for Method Comparison with all 3 axes (3 rows x 1 col)
 figure('Name', 'Method Comparison', 'NumberTitle', 'off', 'Position', [120, 120, 1200, 900]);
 t_cmp = tiledlayout(3, 1, 'TileSpacing', 'Compact', 'Padding', 'Compact');
-title(t_cmp, 'Method Comparison')
+title(t_cmp, 'Method Comparison (All Axes)')
+
+% Compare complementary filter with and without offset compensation
+if compareOffsetComp
+    figure('Name', 'Offset Compensation Comparison', 'NumberTitle', 'off', 'Position', [140, 140, 1200, 900]);
+    t_off = tiledlayout(3, 1, 'TileSpacing', 'Compact', 'Padding', 'Compact');
+    title(t_off, 'Complementary Filter: With vs Without Offset Compensation')
+end
+
+all_axes = gobjects(0);
 cmp_axes = gobjects(0);
+off_axes = gobjects(0);
 
 for i = 1:3
+    
     % Load data
     data_struct = load(files{i});
     all_data = squeeze(data_struct.rx_data.signals.values)';
@@ -61,145 +70,79 @@ for i = 1:3
     accel_raw = all_data(idx, 1:3);
     gyro_raw = all_data(idx, 4:6);
 
-    % Apply optional offset compensation
-    accel = accel_raw;
-    gyro = gyro_raw;
-    if useOffsetComp && hasNoMotionOffsets
-        accel = accel_raw - nmAccOffset;
-        gyro = gyro_raw - nmGyroOffset;
+    % Compute axis-specific offsets using the first calibration samples.
+    nCalib = min(nCalibOffset, size(accel_raw, 1));
+    accOffset = mean(accel_raw(1:nCalib, :), 1);
+    accOffset(3) = accOffset(3) + 9.81;
+    gyroOffset = mean(gyro_raw(1:nCalib, :), 1);
+    fprintf('%s offsets (first %d samples): acc=[%.4f %.4f %.4f], gyro=[%.6f %.6f %.6f]\n', ...
+        labels{i}, nCalib, accOffset(1), accOffset(2), accOffset(3), gyroOffset(1), gyroOffset(2), gyroOffset(3));
+
+    % Compute both branches: without offset and with offset
+    offsetModes = [false true];
+    accelBranch = cell(1, 2);
+    gyroBranch = cell(1, 2);
+    accAnglesBranch = cell(1, 2);
+    gyroAnglesBranch = cell(1, 2);
+    quatAnglesBranch = cell(1, 2);
+    fusedAnglesBranch = cell(1, 2);
+
+    for m = 1:2
+        useOffsetNow = offsetModes(m);
+        accelNow = accel_raw;
+        gyroNow = gyro_raw;
+        if useOffsetNow
+            accelNow = accel_raw - accOffset;
+            gyroNow = gyro_raw - gyroOffset;
+        end
+
+        accelBranch{m} = accelNow;
+        gyroBranch{m} = gyroNow;
+
+        % SUBTASK 5.2 equation: accelerometer angles
+        accAnglesBranch{m} = EulerAnglesFromAccData(accelNow);
+        % SUBTASK 5.3 equation: gyroscope integration
+        gyroAnglesBranch{m} = EulerAnglesFromGyroData(gyroNow, Ts);
+        % SUBTASK 5.4 equation: quaternion integration
+        [~, quatAnglesBranch{m}] = QuaternionFromGyroData(gyroNow, Ts);
+        % SUBTASK 5.5 equation: complementary filter fusion
+        fusedAnglesBranch{m} = ComplementaryFilter(gyroNow, accAnglesBranch{m}, Ts, gamma);
     end
 
-    % SUBTASK 5.2 equation: accelerometer angles
-    calc_rotation_accel = EulerAnglesFromAccData(accel);
-    % SUBTASK 5.3 equation: gyroscope integration
-    calc_rotation_gyro = EulerAnglesFromGyroData(gyro, Ts);
-    % SUBTASK 5.4 equation: quaternion integration
-    [~, calc_rotation_gyro_quat] = QuaternionFromGyroData(gyro, Ts);
-    % SUBTASK 5.5 equation: complementary filter fusion
-    calc_rotation_fused = ComplementaryFilter(gyro, calc_rotation_accel, Ts, gamma);
+    % Select branch used by the existing analysis/plots
+    primaryBranchIdx = 1 + double(useOffsetComp);
 
-    % TASK 6.1: Static phase angles from complementary filter
+    accel = accelBranch{primaryBranchIdx};
+    gyro = gyroBranch{primaryBranchIdx};
+    calc_rotation_accel = accAnglesBranch{primaryBranchIdx};
+    calc_rotation_gyro = gyroAnglesBranch{primaryBranchIdx};
+    calc_rotation_gyro_quat = quatAnglesBranch{primaryBranchIdx};
+    calc_rotation_fused = fusedAnglesBranch{primaryBranchIdx};
 
-    angleSig = calc_rotation_fused(:, axisCol(i));
-    angleSig = angleSig - angleSig(1);
-    angleSigInv = -angleSig;
+    desiredAxis = desired * desiredAxisSign(i);
+    phaseStartSec = desiredPhaseStartSec + desiredAxisStartDelaySec(i);
+    phaseEndSec = desiredPhaseEndSec + desiredAxisStartDelaySec(i);
+    desiredTraceStatic = buildStaticDesiredTrace(plot_t, desiredAxis, phaseStartSec, phaseEndSec);
 
-    % TASK 6.2: Detect static phases (no end-effector movement)
-    gyroNormDeg = vecnorm(gyro * 180 / pi, 2, 2);
-    isStatic = gyroNormDeg < gyroThreshDeg;
-    d = diff([false; isStatic; false]);
-    starts = find(d == 1);
-    ends = find(d == -1) - 1;
+    angleSig = calc_rotation_fused(:, axisCol(i)) - calc_rotation_fused(1, axisCol(i));
+    mask = ~isnan(desiredTraceStatic);
 
-    minLen = round(minStaticSec * fs);
-    keep = (ends - starts + 1) >= minLen;
-    starts = starts(keep);
-    ends = ends(keep);
+    staticResult = struct();
+    staticResult.angleSig = angleSig;
+    staticResult.desiredTrace = desiredTraceStatic;
 
-    if ~isempty(starts)
-        n = min(5, numel(starts));
-        starts = starts(1:n);
-        ends = ends(1:n);
-        desiredNow = desired(1:n);
-
-        % TASK 6.3: Compare static angles to desired sequence
-        % Desired sequence from end-effector rotations: 0 -> 45 -> 90 -> 45 -> 0
-        % Sign check: normal vs inverted
-        meanNormal = zeros(n, 1);
-        meanInverted = zeros(n, 1);
-        for p = 1:n
-            valsNormal = angleSig(starts(p):ends(p));
-            valsInverted = angleSigInv(starts(p):ends(p));
-            meanNormal(p) = mean(valsNormal);
-            meanInverted(p) = mean(valsInverted);
-        end
-
-        scoreNormal = mean(abs(meanNormal - desiredNow));
-        scoreInverted = mean(abs(meanInverted - desiredNow));
-
-        if scoreInverted < scoreNormal
-            signLabel = 'inverted sign is closer';
-        else
-            signLabel = 'normal sign is closer';
-        end
-        fprintf('Sign check (%s): %s\n', labels{i}, signLabel);
-
-        % TASK 6.4: Per-phase means and errors
-        meanDeg = zeros(n,1);
-        stdDeg = zeros(n,1);
-        meanErrDeg = zeros(n,1);
-        meanDegInv = zeros(n,1);
-        stdDegInv = zeros(n,1);
-        meanErrDegInv = zeros(n,1);
-        for p = 1:n
-            vals = angleSig(starts(p):ends(p));
-            valsInv = angleSigInv(starts(p):ends(p));
-            meanDeg(p) = mean(vals);
-            stdDeg(p) = std(vals);
-            meanErrDeg(p) = meanDeg(p) - desiredNow(p);
-            meanDegInv(p) = mean(valsInv);
-            stdDegInv(p) = std(valsInv);
-            meanErrDegInv(p) = meanDegInv(p) - desiredNow(p);
-        end
-
-        Tphase = table((1:n)', desiredNow, ...
-            meanDeg, stdDeg, meanErrDeg, ...
-            meanDegInv, stdDegInv, meanErrDegInv, ...
-            'VariableNames', {'Phase', 'DesiredDeg', ...
-            'MeanDegNormal', 'StdDegNormal', 'MeanErrorDegNormal', ...
-            'MeanDegInverted', 'StdDegInverted', 'MeanErrorDegInverted'});
-
-        % TASK 6.5: For each target angle compute mean error and standard deviation
-        targets = unique(desiredNow);
-        targetDeg = zeros(numel(targets),1);
-        errMean = zeros(numel(targets),1);
-        errStd = zeros(numel(targets),1);
-        errMeanInv = zeros(numel(targets),1);
-        errStdInv = zeros(numel(targets),1);
-
-        for k = 1:numel(targets)
-            tgt = targets(k);
-            allErr = [];
-            allErrInv = [];
-            for p = 1:n
-                if desiredNow(p) == tgt
-                    vals = angleSig(starts(p):ends(p));
-                    valsInv = angleSigInv(starts(p):ends(p));
-                    allErr = [allErr; vals - tgt]; 
-                    allErrInv = [allErrInv; valsInv - tgt]; 
-                end
-            end
-            targetDeg(k) = tgt;
-            errMean(k) = mean(allErr);
-            errStd(k) = std(allErr);
-            errMeanInv(k) = mean(allErrInv);
-            errStdInv(k) = std(allErrInv);
-        end
-
-        Ttarget = table(targetDeg, errMean, errStd, errMeanInv, errStdInv, ...
-            'VariableNames', {'TargetDeg', ...
-            'MeanErrorDegNormal', 'StdErrorDegNormal', ...
-            'MeanErrorDegInverted', 'StdErrorDegInverted'});
-
-        % Visualize static phases
-        desiredTrace = nan(size(angleSig));
-        for p = 1:n
-            desiredTrace(starts(p):ends(p)) = desiredNow(p);
-        end
-
-        figure('Name', ['Step 6 - ' labels{i}], 'NumberTitle', 'off');
-        plot(plot_t, angleSig, 'b', 'LineWidth', 1.2); hold on;
-        plot(plot_t, angleSigInv, 'm', 'LineWidth', 1.2);
-        plot(plot_t, desiredTrace, 'r--', 'LineWidth', 1.5);
-        grid on;
-        xlabel('Time [s]');
-        ylabel('Angle [deg]');
-        title(['Static comparison - ' labels{i}]);
-        legend('Calculated angle (normal)', 'Calculated angle (inverted)', ...
-            'Desired angle in static phases', 'Location', 'best');
+    if any(mask)
+        err = angleSig(mask) - desiredTraceStatic(mask);
+        staticResult.meanErrorDeg = mean(err);
+        staticResult.stdErrorDeg = std(err);
     else
-        warning('No static phases found in %s', files{i});
+        staticResult.meanErrorDeg = NaN;
+        staticResult.stdErrorDeg = NaN;
     end
+
+    staticResult.rmseDeg = computeRMSError(calc_rotation_fused, axisCol(i), desiredAxis);
+    fprintf('RMS Error (%s): %.4f deg\n', labels{i}, staticResult.rmseDeg);
+    plotStaticComparison(plot_t, labels{i}, staticResult);
 
     % Plot raw accelerometer
     ax1 = nexttile(t);
@@ -308,36 +251,80 @@ for i = 1:3
         legend(ax_cmp, {'Accel yaw (accel-only)', 'Complementary Filter', 'Gyro only'}, 'Location', 'eastoutside');
     end
 
+    % Offset compensation comparison (complementary filter only)
+    if compareOffsetComp
+        ax_off = nexttile(t_off);
+        hold(ax_off, 'on')
+        fused_no_offset = fusedAnglesBranch{1}(:, axisCol(i));
+        fused_with_offset = fusedAnglesBranch{2}(:, axisCol(i));
+        plot(ax_off, plot_t, fused_no_offset, 'LineWidth', 1.6, 'Color', [0.00 0.45 0.74]);
+        plot(ax_off, plot_t, fused_with_offset, 'LineWidth', 1.6, 'Color', [0.85 0.33 0.10]);
+        hold(ax_off, 'off')
+
+        d = fused_with_offset - fused_no_offset;
+        dMax = max(abs(d));
+        dMean = mean(abs(d));
+        fprintf('Offset delta %s: max|Δ|=%.4f deg, mean|Δ|=%.4f deg\n', labels{i}, dMax, dMean);
+
+        title(ax_off, sprintf('%s - Complementary Filter Offset Comparison (max|\\Delta|=%.3f deg)', labels{i}, dMax))
+        ylabel(ax_off, 'Degrees')
+        grid(ax_off, 'on')
+        box(ax_off, 'on')
+        yline(ax_off, 0, ':', 'Color', [0.50 0.50 0.50]);
+        legend(ax_off, {'Without offset compensation', 'With offset compensation'}, 'Location', 'eastoutside');
+    end
+
     cmp_axes = [cmp_axes, ax_cmp];
+    if compareOffsetComp
+        off_axes = [off_axes, ax_off];
+    end
     all_axes = [all_axes, ax1, ax2, ax3, ax4, ax5, ax6];
+    
+    % Link axes within this tab
+    xlabel(t, 'Time (seconds)')
+    linkaxes(all_axes, 'x')
+    xlim(all_axes, [plot_t(1) plot_t(end)])
+    all_axes = gobjects(0);
+    
+    xlabel(t_cmp, 'Time (seconds)')
+    linkaxes(cmp_axes, 'x')
+    xlim(cmp_axes, [plot_t(1) plot_t(end)])
+    cmp_axes = gobjects(0);
+
+    if compareOffsetComp
+        xlabel(t_off, 'Time (seconds)')
+        linkaxes(off_axes, 'x')
+        xlim(off_axes, [plot_t(1) plot_t(end)])
+        off_axes = gobjects(0);
+    end
 end
-
-xlabel(t, 'Time (seconds)')
-linkaxes(all_axes, 'x')
-xlim(all_axes, [plot_t(1) plot_t(end)])
-
-xlabel(t_cmp, 'Time (seconds)')
-linkaxes(cmp_axes, 'x')
-xlim(cmp_axes, [plot_t(1) plot_t(end)])
 
 % === Equation methods ===
 
 function [euler_acc] = EulerAnglesFromAccData(acc)
     % Subtask 5.2 equation: accelerometer-based angles
-    for k=1:length(acc)
+    n = size(acc, 1);
+    phi = zeros(n, 1);
+    theta = zeros(n, 1);
 
-NormedX=acc(k,1)./norm(acc(k,:));
-NormedY=acc(k,2)./norm(acc(k,:));
-NormedZ=acc(k,3)./norm(acc(k,:));
+    for k = 1:n
+        accNorm = norm(acc(k, :));
+        if accNorm == 0
+            continue;
+        end
 
-phi(k,:)=-atan2(NormedY,-NormedZ);
-theta(k,:)=-atan2(-NormedX,sqrt(NormedY^2+NormedZ^2));
- end
+        normedX = acc(k, 1) / accNorm;
+        normedY = acc(k, 2) / accNorm;
+        normedZ = acc(k, 3) / accNorm;
 
- phi=phi*180/pi;
- theta=theta*180/pi;
+        phi(k) = -atan2(normedY, -normedZ);
+        theta(k) = -atan2(-normedX, sqrt(normedY^2 + normedZ^2));
+    end
 
-    euler_acc=[phi theta];
+    phi = phi * 180 / pi;
+    theta = theta * 180 / pi;
+
+    euler_acc = [phi theta];
 
 end
 
@@ -390,39 +377,60 @@ function [q, eulerQuat] = QuaternionFromGyroData(gyro_data, Ts)
 end
 
 
-function [accOffset, gyroOffset, ok] = computeNoMotionOffsets(filePath)
-    accOffset = [0 0 0];
-    gyroOffset = [0 0 0];
-    ok = false;
+function plotStaticComparison(plot_t, axisLabel, staticResult)
+    figure('Name', ['Step 6 - ' axisLabel], 'NumberTitle', 'off');
+    hold on;
+    plot(plot_t, staticResult.angleSig, 'b', 'LineWidth', 1.2);
+    plot(plot_t, staticResult.desiredTrace, 'r--', 'LineWidth', 1.5);
+    grid on;
+    xlabel('Time [s]');
+    ylabel('Angle [deg]');
+    title(['Static comparison - ' axisLabel]);
+    legend('Calculated angle (normal)', 'Desired angle in static phases', 'Location', 'best');
 
-    if ~isfile(filePath)
-        return;
-    end
+    statsText = sprintf('Mean error: %.2f deg\nStd dev: %.2f deg\nRMSE: %.2f deg', ...
+        staticResult.meanErrorDeg, staticResult.stdErrorDeg, staticResult.rmseDeg);
+    annotation('textbox', [0.67 0.72 0.30 0.20], 'String', statsText, ...
+        'FitBoxToText', 'on', 'BackgroundColor', 'white', 'EdgeColor', [0.7 0.7 0.7]);
+end
 
-    S = load(filePath);
-    if isfield(S, 'rx_data')
-        vals = squeeze(S.rx_data.signals.values)';
-        if size(vals, 2) < 6
-            return;
+
+function rms_error = computeRMSError(data, column, expected_values)
+    sections = [50 100; 500 550; 900 950; 1300 1350; 1700 1750];
+
+    squared_error_sum = 0;
+    total_count = 0;
+
+    for i = 1:size(sections, 1)
+        rangeStart = sections(i, 1);
+        rangeEnd = min(sections(i, 2), size(data, 1));
+        if rangeStart > size(data, 1) || i > numel(expected_values)
+            continue;
         end
-        accRef = vals(:, 1:3);
-        gyroRef = vals(:, 4:6);
-    elseif isfield(S, 'acc') && isfield(S, 'gyro')
-        accRef = S.acc;
-        gyroRef = S.gyro;
+
+        range = rangeStart:rangeEnd;
+        actual_values = data(range, column);
+
+        squared_error_sum = squared_error_sum + sum((actual_values - expected_values(i)).^2);
+        total_count = total_count + numel(actual_values);
+    end
+
+    if total_count == 0
+        rms_error = NaN;
     else
-        return;
+        rms_error = sqrt(squared_error_sum / total_count);
     end
+end
 
-    nCalib = min(100, size(accRef, 1));
-    if nCalib < 1
-        return;
+
+function desiredTrace = buildStaticDesiredTrace(plot_t, desired, phaseStartSec, phaseEndSec)
+    desiredTrace = nan(size(plot_t));
+
+    n = min([numel(desired), numel(phaseStartSec), numel(phaseEndSec)]);
+    for p = 1:n
+        idx = (plot_t >= phaseStartSec(p)) & (plot_t <= phaseEndSec(p));
+        desiredTrace(idx) = desired(p);
     end
-
-    accOffset = mean(accRef(1:nCalib, :), 1);
-    accOffset(3) = accOffset(3) + 9.81;
-    gyroOffset = mean(gyroRef(1:nCalib, :), 1);
-    ok = true;
 end
 
 
