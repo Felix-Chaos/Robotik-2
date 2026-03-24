@@ -3,7 +3,7 @@
 
 clearvars; clc; close all;
 
-useOffsetComp = true;
+useOffsetComp = false;
 compareOffsetComp = true;
 fprintf('Offset compensation: %s\n', char(string(useOffsetComp)));
 
@@ -16,7 +16,7 @@ desired = [0, 45, 90, 45, 0]';
 % X and Z inverted, Y unchanged.
 desiredAxisSign = [-1, 1, -1];
 
-% Static desired-phase timing (manual, easy to edit)
+% Static desired-phase timing
 % Tuned to the provided plot timing.
 desiredPhaseStartSec = [0, 10, 20, 30, 40];
 desiredPhaseEndSec = [5, 15, 25, 35, 45];
@@ -101,12 +101,12 @@ for i = 1:3
         accelBranch{m} = accelNow;
         gyroBranch{m} = gyroNow;
 
-        % SUBTASK 5.2 equation: accelerometer angles
-        accAnglesBranch{m} = EulerAnglesFromAccData(accelNow);
-        % SUBTASK 5.3 equation: gyroscope integration
-        gyroAnglesBranch{m} = EulerAnglesFromGyroData(gyroNow, Ts);
-        % SUBTASK 5.4 equation: quaternion integration
-        [~, quatAnglesBranch{m}] = QuaternionFromGyroData(gyroNow, Ts);
+        % SUBTASK 5.2 equation: rotation angles from accelerometer data
+        accAnglesBranch{m} = RotationAnglesFromAccData(accelNow);
+        % SUBTASK 5.3 equation: rotation angles from gyroscope integration
+        gyroAnglesBranch{m} = RotationAnglesFromGyroData(gyroNow, Ts);
+        % SUBTASK 5.4 equation: Euler angles from gyro-based quaternion integration
+        quatAnglesBranch{m} = EulerAnglesFromGyroQuaternionData(gyroNow, Ts);
         % SUBTASK 5.5 equation: complementary filter fusion
         fusedAnglesBranch{m} = ComplementaryFilter(gyroNow, accAnglesBranch{m}, Ts, gamma);
     end
@@ -177,7 +177,7 @@ for i = 1:3
     % Accelerometer angles
     ax3 = nexttile(t, 2);
     plot(ax3, plot_t, calc_rotation_accel, 'LineWidth', 1.5)
-    title(ax3, [labels{i} ' - Orientation from Accelerometer'])
+    title(ax3, [labels{i} ' - Rotation Angles from Accelerometer'])
     ylabel(ax3, 'Degrees')
     grid(ax3, 'on')
     box(ax3, 'on')
@@ -187,7 +187,7 @@ for i = 1:3
     % Gyroscope angles
     ax4 = nexttile(t, 5);
     plot(ax4, plot_t, calc_rotation_gyro, 'LineWidth', 1.2)
-    title(ax4, [labels{i} ' - Orientation from Gyroscope'])
+    title(ax4, [labels{i} ' - Rotation Angles from Gyroscope Integration'])
     ylabel(ax4, 'Degrees')
     grid(ax4, 'on')
     box(ax4, 'on')
@@ -197,7 +197,7 @@ for i = 1:3
     % Quaternion angles
     ax5 = nexttile(t, 6);
     plot(ax5, plot_t, calc_rotation_gyro_quat, 'LineWidth', 1.2)
-    title(ax5, [labels{i} ' - Orientation from Gyro Quaternion'])
+    title(ax5, [labels{i} ' - Euler Angles from Gyro Quaternions'])
     ylabel(ax5, 'Degrees')
     grid(ax5, 'on')
     box(ax5, 'on')
@@ -227,8 +227,7 @@ for i = 1:3
         fused_trace = calc_rotation_fused(:, 2);
         angle_name = 'Pitch';
     else
-        % Direct accelerometer yaw value in this model (fixed at 0).
-        accel_trace = zeros(size(plot_t));
+        accel_trace = calc_rotation_accel(:, 3);
         gyro_trace = calc_rotation_gyro(:, 3);
         fused_trace = calc_rotation_fused(:, 3);
         angle_name = 'Yaw';
@@ -287,8 +286,8 @@ end
 
 % === Equation methods ===
 
-function [euler_acc] = EulerAnglesFromAccData(acc)
-    % Subtask 5.2 equation: accelerometer-based angles
+function [rot_acc] = RotationAnglesFromAccData(acc)
+    % Subtask 5.2 equation: rotation angles from accelerometer data
     n = size(acc, 1);
     phi = zeros(n, 1);
     theta = zeros(n, 1);
@@ -310,19 +309,19 @@ function [euler_acc] = EulerAnglesFromAccData(acc)
     phi = phi * 180 / pi;
     theta = theta * 180 / pi;
 
-    euler_acc = [phi theta];
+    rot_acc = [phi theta];
 
 end
 
 
-function [euler_gyro] = EulerAnglesFromGyroData(gyro_data, Ts)
-    % Subtask 5.3 equation: gyroscope integration
-    euler_gyro=[0 0 0];
-    euler_gyro(1,:)=gyro_data(1,:).*Ts;
+function [rot_gyro] = RotationAnglesFromGyroData(gyro_data, Ts)
+    % Subtask 5.3 equation: rotation angles from gyroscope integration
+    rot_gyro=[0 0 0];
+    rot_gyro(1,:)=gyro_data(1,:).*Ts;
     for k=2:1:length(gyro_data)
-        euler_gyro(k,:)=euler_gyro((k-1),:)+gyro_data(k,:).*Ts;
+        rot_gyro(k,:)=rot_gyro((k-1),:)+gyro_data(k,:).*Ts;
     end
-    euler_gyro = euler_gyro.*180/pi;
+    rot_gyro = rot_gyro.*180/pi;
 end
 
 
@@ -341,24 +340,23 @@ function [theta] = ComplementaryFilter(omega, a, Ts, gamma)
 end
 
 
-function [q, eulerQuat] = QuaternionFromGyroData(gyro_data, Ts)
-    % Subtask 5.4 equation: quaternion integration
+function eulerQuat = EulerAnglesFromGyroQuaternionData(gyro_data, Ts)
+    % Subtask 5.4 equation: Euler angles from gyro-based quaternion integration
     n = size(gyro_data, 1);
-    q = quaternion.zeros(n, 1);
     eulerQuat = zeros(n, 3);
-    
+
     if n == 0
         return;
     end
-    
-    q(1) = quaternion([1, 0, 0, 0]);
-    eulerQuat(1,:) = eulerd(q(1), 'XYZ', 'frame');
-    
+
+    q_prev = quaternion([1, 0, 0, 0]);
+    eulerQuat(1,:) = eulerd(q_prev, 'XYZ', 'frame');
+
     for k = 2:n
         omega = quaternion([0, gyro_data(k-1,1), gyro_data(k-1,2), gyro_data(k-1,3)]);
-        q_dot = 0.5 * q(k-1) * omega;
-        q(k) = normalize(q(k-1) + q_dot * Ts);
-        eulerQuat(k,:) = eulerd(q(k), 'XYZ', 'frame');
+        q_dot = 0.5 * q_prev * omega;
+        q_prev = normalize(q_prev + q_dot * Ts);
+        eulerQuat(k,:) = eulerd(q_prev, 'XYZ', 'frame');
     end
 end
 
