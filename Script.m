@@ -227,7 +227,8 @@ for i = 1:3
         fused_trace = calc_rotation_fused(:, 2);
         angle_name = 'Pitch';
     else
-        accel_trace = calc_rotation_accel(:, 3);
+        % Accelerometer-only yaw is not observable from gravity in this model.
+        accel_trace = nan(size(plot_t));
         gyro_trace = calc_rotation_gyro(:, 3);
         fused_trace = calc_rotation_fused(:, 3);
         angle_name = 'Yaw';
