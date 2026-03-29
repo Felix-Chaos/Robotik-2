@@ -29,7 +29,7 @@ desiredAxisStartDelaySec = [0.0, 0.0, 0.0];
 fs = 50;  Ts = 1/fs;  gamma = 0.97;
 maxDurationSec = 60;  gyroThreshDeg = 3;  minStaticSec = 3.0;
 
-% Offset calibration follows the same approach as the axis scripts:
+% Offset calibration samples:
 % mean over first 100 samples and subtract that bias.
 nCalibOffset = 100;
 
